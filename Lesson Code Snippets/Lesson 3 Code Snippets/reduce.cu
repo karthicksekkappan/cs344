@@ -29,11 +29,12 @@ __global__ void shmem_reduce_kernel(float * d_out, const float * d_in)
     // sdata is allocated in the kernel call: 3rd arg to <<<b, t, shmem>>>
     extern __shared__ float sdata[];
 
-    int myId = threadIdx.x + blockDim.x * blockIdx.x;
-    int tid  = threadIdx.x;
+    int myId = 2*(threadIdx.x + blockDim.x * blockIdx.x);
+    int tid  = 2*threadIdx.x;
 
     // load shared mem from global mem
     sdata[tid] = d_in[myId];
+    sdata[tid-1]=d_in[myId-1]
     __syncthreads();            // make sure entire block is loaded!
 
     // do reduction in shared mem
@@ -63,7 +64,7 @@ void reduce(float * d_out, float * d_intermediate, float * d_in,
     int blocks = size / maxThreadsPerBlock;
     if (usesSharedMemory)
     {
-        shmem_reduce_kernel<<<blocks, threads, threads * sizeof(float)>>>
+        shmem_reduce_kernel<<<blocks, threads/2, threads * sizeof(float)>>>
             (d_intermediate, d_in);
     }
     else
